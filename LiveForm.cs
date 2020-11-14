@@ -14,6 +14,8 @@ namespace LiveFrame
         {
             InitializeComponent();
 
+            Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
+
             notifyIcon = new NotifyIcon
             {
                 Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
