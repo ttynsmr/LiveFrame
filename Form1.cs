@@ -19,22 +19,16 @@ namespace LiveFrame
                 Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
                 Visible = true
             };
+            notifyIcon.Click += (sender, e) => ToggleEditMode();
+            notifyIcon.DoubleClick += (sender, e) => Application.Exit();
 
-            notifyIcon.Click += NotifyIcon_DoubleClick;
-            notifyIcon.DoubleClick += NotifyIcon_DoubleClick1;
-            
-            Click += NotifyIcon_DoubleClick;
+            Click += (sender, e) => ToggleEditMode();
 
             FormBorderStyle = FormBorderStyle.Sizable;
             Opacity = 0.25;
         }
 
-        private void NotifyIcon_DoubleClick1(object sender, System.EventArgs e)
-        {
-            Application.Exit();
-        }
-
-        private void NotifyIcon_DoubleClick(object sender, System.EventArgs e)
+        private void ToggleEditMode()
         {
             if (editable)
             {
