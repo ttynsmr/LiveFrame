@@ -38,6 +38,14 @@ namespace LiveFrame
                 }
             };
 
+            KeyDown += (sender, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    ToggleEditMode();
+                }
+            };
+
             FormBorderStyle = FormBorderStyle.Sizable;
             Opacity = 0.25;
         }
