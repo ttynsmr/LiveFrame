@@ -4,13 +4,13 @@ using System.Windows.Forms;
 
 namespace LiveFrame
 {
-    public partial class Form1 : Form
+    public partial class LiveForm : Form
     {
         private NotifyIcon notifyIcon;
         private bool editable = false;
 
 
-        public Form1()
+        public LiveForm()
         {
             InitializeComponent();
 

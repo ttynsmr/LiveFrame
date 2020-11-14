@@ -1,7 +1,7 @@
 ﻿
 namespace LiveFrame
 {
-    partial class Form1
+    partial class LiveForm
     {
         /// <summary>
         /// 必要なデザイナー変数です。
@@ -31,7 +31,7 @@ namespace LiveFrame
         {
             this.SuspendLayout();
             // 
-            // Form1
+            // LiveForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -40,7 +40,7 @@ namespace LiveFrame
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "Form1";
+            this.Name = "LiveForm";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.Text = "LiveFrame";
