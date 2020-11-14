@@ -46,23 +46,30 @@ namespace LiveFrame
                 }
             };
 
-            FormBorderStyle = FormBorderStyle.Sizable;
-            Opacity = 0.25;
+            EnableEditMode();
         }
 
         private void ToggleEditMode()
         {
             if (editable)
             {
-                FormBorderStyle = FormBorderStyle.Sizable;
-                Opacity = 0.25;
+                EnableEditMode();
             }
             else
             {
-                FormBorderStyle = FormBorderStyle.None;
-                Opacity = 0;
+                DisableEditMode();
             }
             editable = !editable;
+        }
+
+        private void DisableEditMode()
+        {
+            Opacity = 0;
+        }
+
+        private void EnableEditMode()
+        {
+            Opacity = 0.5;
         }
     }
 }
