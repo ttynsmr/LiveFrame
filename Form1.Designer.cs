@@ -43,7 +43,7 @@ namespace LiveFrame
             this.Name = "Form1";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
-            this.Text = "Form1";
+            this.Text = "LiveFrame";
             this.TopMost = true;
             this.ResumeLayout(false);
 
