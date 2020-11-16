@@ -8,7 +8,7 @@ namespace LiveFrame
     {
         private NotifyIcon notifyIcon;
         private bool editable = true;
-
+        private HotKey hotKey;
 
         public LiveForm()
         {
@@ -46,6 +46,12 @@ namespace LiveFrame
                 {
                     ToggleEditMode();
                 }
+            };
+
+            hotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.L);
+            hotKey.HotKeyPush += (sender, e) =>
+            {
+                ToggleEditMode();
             };
 
             EnableEditMode();
