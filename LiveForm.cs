@@ -7,7 +7,7 @@ namespace LiveFrame
     public partial class LiveForm : Form
     {
         private NotifyIcon notifyIcon;
-        private bool editable = false;
+        private bool editable = true;
 
 
         public LiveForm()
@@ -55,23 +55,24 @@ namespace LiveFrame
         {
             if (editable)
             {
-                EnableEditMode();
+                DisableEditMode();
             }
             else
             {
-                DisableEditMode();
+                EnableEditMode();
             }
-            editable = !editable;
         }
 
         private void DisableEditMode()
         {
             Opacity = 0;
+            editable = false;
         }
 
         private void EnableEditMode()
         {
             Opacity = 0.5;
+            editable = true;
         }
     }
 }
