@@ -48,6 +48,19 @@ namespace LiveFrame
                 }
             };
 
+            MouseWheel += (sender, e) =>
+            {
+                // zoom in / out
+                float aspectRatio = (float)Width / (float)Height;
+                int zoom = e.Delta;
+                float deltaWidth = zoom * aspectRatio / 10;
+                float deltaHeight = zoom * 1.0f / 10;
+                SetDesktopBounds((int)(Left + deltaWidth),
+                                 (int)(Top + deltaHeight),
+                                 (int)(Width - deltaWidth * 2),
+                                 (int)(Height - deltaHeight * 2));
+            };
+
             hotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.L);
             hotKey.HotKeyPush += (sender, e) =>
             {
