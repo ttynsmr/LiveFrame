@@ -67,6 +67,11 @@ namespace LiveFrame
                 ToggleEditMode();
             };
 
+            Disposed += (sender, e) => {
+                hotKey.Dispose();
+                hotKey = null;
+            };
+
             EnableEditMode();
         }
 
