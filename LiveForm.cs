@@ -19,6 +19,8 @@ namespace LiveFrame
         private List<HotKey> disposer = new List<HotKey>();
         private HotKey visibleModeHotKey;
         private HotKey blindfoldModeHotKey;
+        private HotKey followModeHotKey;
+        private Timer timer;
 
         public LiveForm()
         {
@@ -76,6 +78,16 @@ namespace LiveFrame
             visibleModeHotKey.HotKeyPush += (sender, e) =>
             {
                 ToggleEditMode();
+                System.Diagnostics.Debug.WriteLine($"{visibleMode}");
+            };
+
+            followModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.P);
+            disposer.Add(followModeHotKey);
+            followModeHotKey.HotKeyPush += (sender, e) =>
+            {
+                timer.Enabled = !timer.Enabled;
+                System.Diagnostics.Debug.WriteLine($"{timer.Enabled}");
+                MessageBox.Show($"Follow mode {timer.Enabled}");
             };
 
             blindfoldModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.B);
@@ -91,6 +103,17 @@ namespace LiveFrame
                     d.Dispose();
                 }
             };
+
+            timer = new Timer();
+            timer.Interval = 500;
+            timer.Tick += (sender, e) =>
+            {
+                var hWnd = Win32.GetForegroundWindow();
+                Win32.Rect rect = new Win32.Rect();
+                Win32.GetWindowRect(hWnd, ref rect);
+                SetDesktopBounds(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
+            };
+            timer.Enabled = false;
 
             SwitchEditMode();
         }
