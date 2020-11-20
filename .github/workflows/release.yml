@@ -1,0 +1,29 @@
+name: release
+on:
+  push:
+    tags:
+      - 'v*'
+      
+jobs:
+  check-bats-version:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: microsoft/setup-msbuild@v1.0.2
+      - run: .\BuildReleaseApplication.bat
+
+      - name: Zip output
+        run: |
+          cd output
+          zip bin\Release *.exe
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
