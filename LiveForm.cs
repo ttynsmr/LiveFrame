@@ -91,12 +91,16 @@ namespace LiveFrame
         {
             Opacity = 0;
             editable = false;
+            label1.Visible = false;
+            label2.Visible = true;
         }
 
         private void EnableEditMode()
         {
             Opacity = 0.5;
             editable = true;
+            label1.Visible = true;
+            label2.Visible = false;
         }
     }
 }

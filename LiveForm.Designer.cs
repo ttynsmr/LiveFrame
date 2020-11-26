@@ -30,6 +30,7 @@ namespace LiveFrame
         private void InitializeComponent()
         {
             this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // label1
@@ -45,6 +46,19 @@ namespace LiveFrame
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.label1.UseMnemonic = false;
             // 
+            // label2
+            // 
+            this.label2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.label2.Enabled = false;
+            this.label2.Font = new System.Drawing.Font("MS UI Gothic", 90F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.label2.Location = new System.Drawing.Point(0, 0);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(800, 450);
+            this.label2.TabIndex = 1;
+            this.label2.Text = "be right back";
+            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.label2.UseMnemonic = false;
+            // 
             // LiveForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -52,6 +66,7 @@ namespace LiveFrame
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.ControlBox = false;
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -66,6 +81,7 @@ namespace LiveFrame
         #endregion
 
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
     }
 }
 
