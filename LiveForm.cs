@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Collections.Generic;
+using System.Drawing;
 using System.Reflection;
 using System.Windows.Forms;
 
@@ -6,9 +7,18 @@ namespace LiveFrame
 {
     public partial class LiveForm : Form
     {
+        enum VisibleMode
+        {
+            Edit,
+            Live,
+            Blindfold
+        }
+
         private NotifyIcon notifyIcon;
-        private bool editable = true;
-        private HotKey hotKey;
+        private VisibleMode visibleMode = VisibleMode.Edit;
+        private List<HotKey> disposer = new List<HotKey>();
+        private HotKey visibleModeHotKey;
+        private HotKey blindfoldModeHotKey;
 
         public LiveForm()
         {
@@ -61,46 +71,81 @@ namespace LiveFrame
                                  (int)(Height - deltaHeight * 2));
             };
 
-            hotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.L);
-            hotKey.HotKeyPush += (sender, e) =>
+            visibleModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.L);
+            disposer.Add(visibleModeHotKey);
+            visibleModeHotKey.HotKeyPush += (sender, e) =>
             {
                 ToggleEditMode();
             };
 
-            Disposed += (sender, e) => {
-                hotKey.Dispose();
-                hotKey = null;
+            blindfoldModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.B);
+            disposer.Add(blindfoldModeHotKey);
+            blindfoldModeHotKey.HotKeyPush += (sender, e) =>
+            {
+                ToggleBlindfoldMode();
             };
 
-            EnableEditMode();
+            Disposed += (sender, e) => {
+                foreach (var d in disposer)
+                {
+                    d.Dispose();
+                }
+            };
+
+            SwitchEditMode();
+        }
+
+        private void ToggleBlindfoldMode()
+        {
+            switch (visibleMode)
+            {
+                case VisibleMode.Edit:
+                    break;
+                case VisibleMode.Live:
+                    SwitchBlindfoldMode();
+                    break;
+                case VisibleMode.Blindfold:
+                    SwitchLiveMode();
+                    break;
+            }
         }
 
         private void ToggleEditMode()
         {
-            if (editable)
+            switch(visibleMode)
             {
-                DisableEditMode();
-            }
-            else
-            {
-                EnableEditMode();
+                case VisibleMode.Edit:
+                    SwitchLiveMode();
+                    break;
+                case VisibleMode.Live:
+                case VisibleMode.Blindfold:
+                    SwitchEditMode();
+                    break;
             }
         }
 
-        private void DisableEditMode()
+        private void SwitchLiveMode()
         {
             Opacity = 0;
-            editable = false;
+            visibleMode = VisibleMode.Live;
             label1.Visible = false;
             label2.Visible = true;
         }
 
-        private void EnableEditMode()
+        private void SwitchEditMode()
         {
             Opacity = 0.5;
-            editable = true;
+            visibleMode = VisibleMode.Edit;
             label1.Visible = true;
             label2.Visible = false;
+        }
+
+        private void SwitchBlindfoldMode()
+        {
+            Opacity = 1;
+            visibleMode = VisibleMode.Blindfold;
+            label1.Visible = false;
+            label2.Visible = true;
         }
     }
 }
