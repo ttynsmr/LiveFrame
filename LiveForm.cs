@@ -130,6 +130,9 @@ namespace LiveFrame
             visibleMode = VisibleMode.Live;
             label1.Visible = false;
             label2.Visible = true;
+            TopMost = false;
+            Refresh();
+            TopMost = true;
         }
 
         private void SwitchEditMode()
