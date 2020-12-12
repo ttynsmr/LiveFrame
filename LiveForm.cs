@@ -126,6 +126,7 @@ namespace LiveFrame
 
         private void SwitchLiveMode()
         {
+            FormBorderStyle = FormBorderStyle.None;
             Opacity = 0;
             visibleMode = VisibleMode.Live;
             label1.Visible = false;
@@ -137,6 +138,7 @@ namespace LiveFrame
 
         private void SwitchEditMode()
         {
+            FormBorderStyle = FormBorderStyle.Sizable;
             Opacity = 0.5;
             visibleMode = VisibleMode.Edit;
             label1.Visible = true;
