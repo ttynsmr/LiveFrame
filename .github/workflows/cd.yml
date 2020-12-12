@@ -5,7 +5,7 @@ on:
       - 'v*'
       
 jobs:
-  check-bats-version:
+  build-to-release:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
