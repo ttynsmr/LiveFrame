@@ -18,7 +18,11 @@ namespace LiveFrame
         public static extern IntPtr GetForegroundWindow();
 
         [DllImport("user32.dll")]
-        public static extern IntPtr GetWindowRect(IntPtr hWnd, ref Rect rect);
+        public static extern IntPtr GetWindowRect(IntPtr hWnd, out Rect rect);
+
+        public const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
+        [DllImport("dwmapi.dll")]
+        public static extern int DwmGetWindowAttribute(IntPtr hWnd, int dwAttribute, out Rect rect, int cbAttribute);
 
         [StructLayout(LayoutKind.Sequential)]
         public struct Rect

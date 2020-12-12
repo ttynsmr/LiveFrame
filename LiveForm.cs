@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace LiveFrame
@@ -78,7 +79,6 @@ namespace LiveFrame
             visibleModeHotKey.HotKeyPush += (sender, e) =>
             {
                 ToggleEditMode();
-                System.Diagnostics.Debug.WriteLine($"{visibleMode}");
             };
 
             followModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.P);
@@ -86,8 +86,6 @@ namespace LiveFrame
             followModeHotKey.HotKeyPush += (sender, e) =>
             {
                 timer.Enabled = !timer.Enabled;
-                System.Diagnostics.Debug.WriteLine($"{timer.Enabled}");
-                MessageBox.Show($"Follow mode {timer.Enabled}");
             };
 
             blindfoldModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.B);
@@ -108,10 +106,22 @@ namespace LiveFrame
             timer.Interval = 500;
             timer.Tick += (sender, e) =>
             {
-                var hWnd = Win32.GetForegroundWindow();
+                var foregroundWindowHandle = Win32.GetForegroundWindow();
                 Win32.Rect rect = new Win32.Rect();
-                Win32.GetWindowRect(hWnd, ref rect);
-                SetDesktopBounds(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
+                Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
+
+                // 自分のウィンドウサイズのギャップを計算してサイズを補正する
+                Win32.Rect rect1 = new Win32.Rect();
+                Win32.GetWindowRect(Handle, out rect1);
+                Win32.Rect rect2 = new Win32.Rect();
+                Win32.DwmGetWindowAttribute(Handle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect2, Marshal.SizeOf(typeof(Win32.Rect)));
+
+                rect.Left += rect1.Left - rect2.Left;
+                rect.Top += rect1.Top - rect2.Top;
+                rect.Right += rect1.Right - rect2.Right;
+                rect.Bottom += rect1.Bottom - rect2.Bottom;
+
+                SetBounds(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
             };
             timer.Enabled = false;
 
