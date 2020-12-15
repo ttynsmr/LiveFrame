@@ -68,7 +68,7 @@ namespace LiveFrame
                 int zoom = e.Delta;
                 float deltaWidth = zoom * aspectRatio / 10;
                 float deltaHeight = zoom * 1.0f / 10;
-                SetDesktopBounds((int)(Left + deltaWidth),
+                SetBounds((int)(Left + deltaWidth),
                                  (int)(Top + deltaHeight),
                                  (int)(Width - deltaWidth * 2),
                                  (int)(Height - deltaHeight * 2));
