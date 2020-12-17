@@ -23,7 +23,6 @@ namespace LiveFrame
         private HotKey blindfoldModeHotKey;
         private HotKey followModeHotKey;
         private Timer timer;
-        private IntPtr previousForegroundWindowHandle;
 
         public LiveForm()
         {
@@ -109,10 +108,6 @@ namespace LiveFrame
             timer.Tick += (sender, e) =>
             {
                 var foregroundWindowHandle = Win32.GetForegroundWindow();
-                if (previousForegroundWindowHandle == foregroundWindowHandle)
-                {
-                    return;
-                }
 
                 Win32.Rect rect = new Win32.Rect();
                 Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
@@ -129,8 +124,6 @@ namespace LiveFrame
                 rect.Bottom += rect1.Bottom - rect2.Bottom;
 
                 SetBounds(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
-
-                previousForegroundWindowHandle = foregroundWindowHandle;
 
                 RefreshTopMost();
             };
