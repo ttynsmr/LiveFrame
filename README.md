@@ -4,8 +4,8 @@
 
 ## 操作
 
-Ctrl + Alt + L ☛ Toggle edit mode.
+Ctrl + Alt + Shift + L ☛ Toggle edit mode.
 
-Ctrl + Alt + P ☛ Toggle follow active window mode.
+Ctrl + Alt + Shift + P ☛ Toggle follow active window mode.
 
-Ctrl + Alt + B ☛ Toggle showing "be right back".
+Ctrl + Alt + Shift + B ☛ Toggle showing "be right back".
