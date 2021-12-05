@@ -24,6 +24,7 @@ namespace LiveFrame
         private HotKey followModeHotKey;
         private Timer timer;
         private bool enableFindMe = true;
+        private Bitmap captured;
 
         public LiveForm()
         {
@@ -126,11 +127,28 @@ namespace LiveFrame
 
                 SetBounds(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
 
+                captured = LiveFrame.Capture.GetWindowBitmap(foregroundWindowHandle);
+                if (captured != null)
+                {
+                    //this.DoubleBuffered = false;
+                    //this.BackgroundImage = captured;
+                    this.Refresh();
+                }
+
                 RefreshTopMost();
             };
             timer.Enabled = false;
 
             SwitchEditMode();
+        }
+
+        private void LiveForm_Paint(object sender, PaintEventArgs e)
+        {
+            if (captured != null)
+            {
+                e.Graphics.DrawImageUnscaled(captured, Point.Empty);
+            }
+            e.Graphics.DrawLine(new Pen(Color.Red, 3), new Point(0, 0), new Point(Width, Height));
         }
 
         private void RefreshTopMost()

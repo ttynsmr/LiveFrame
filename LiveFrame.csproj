@@ -64,6 +64,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Capture.cs" />
     <Compile Include="GlobalHotKey.cs" />
     <Compile Include="LiveForm.cs">
       <SubType>Form</SubType>

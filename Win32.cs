@@ -24,6 +24,17 @@ namespace LiveFrame
         [DllImport("dwmapi.dll")]
         public static extern int DwmGetWindowAttribute(IntPtr hWnd, int dwAttribute, out Rect rect, int cbAttribute);
 
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetWindowDC(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr ReleaseDC(IntPtr hWnd, IntPtr hdc);
+
+        [DllImport("gdi32.dll")]
+        public static extern int BitBlt(IntPtr hDestDC, int x, int y, int nWidth, int nHeight, IntPtr hSrcDC, int xSrc, int ySrc, int dwRop);
+
+        public const int SRCCOPY = 13369376;
+
         [StructLayout(LayoutKind.Sequential)]
         public struct Rect
         {
@@ -31,6 +42,9 @@ namespace LiveFrame
             public int Top;
             public int Right;
             public int Bottom;
+
+            public int Width { get { return Right - Left; } }
+            public int Height { get { return Bottom - Top; } }
         }
     }
 }

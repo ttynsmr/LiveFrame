@@ -35,6 +35,7 @@ namespace LiveFrame
             // 
             // label1
             // 
+            this.label1.BackColor = System.Drawing.Color.Transparent;
             this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label1.Enabled = false;
             this.label1.Font = new System.Drawing.Font("MS UI Gothic", 90F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
@@ -48,6 +49,7 @@ namespace LiveFrame
             // 
             // label2
             // 
+            this.label2.BackColor = System.Drawing.Color.Transparent;
             this.label2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label2.Enabled = false;
             this.label2.Font = new System.Drawing.Font("MS UI Gothic", 90F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
@@ -58,6 +60,7 @@ namespace LiveFrame
             this.label2.Text = "be right back";
             this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.label2.UseMnemonic = false;
+            this.label2.Visible = false;
             // 
             // LiveForm
             // 
@@ -74,6 +77,7 @@ namespace LiveFrame
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.TopMost = true;
+            this.Paint += new System.Windows.Forms.PaintEventHandler(this.LiveForm_Paint);
             this.ResumeLayout(false);
 
         }
