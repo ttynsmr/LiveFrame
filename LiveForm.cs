@@ -105,6 +105,8 @@ namespace LiveFrame
                 }
             };
 
+            DoubleBuffered = true;
+
             timer = new Timer();
             timer.Interval = 500;
             timer.Tick += (sender, e) =>
@@ -127,13 +129,12 @@ namespace LiveFrame
 
                 SetBounds(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
 
-                captured = LiveFrame.Capture.GetWindowBitmap(foregroundWindowHandle);
                 if (captured != null)
                 {
-                    //this.DoubleBuffered = false;
-                    //this.BackgroundImage = captured;
-                    this.Refresh();
+                    captured.Dispose();
+                    captured = null;
                 }
+                captured = LiveFrame.Capture.GetWindowBitmap(foregroundWindowHandle);
 
                 RefreshTopMost();
             };
@@ -142,13 +143,18 @@ namespace LiveFrame
             SwitchEditMode();
         }
 
+        protected override void OnPaintBackground(PaintEventArgs pevent)
+        {
+            // チラつき防止のため何もしない
+        }
+
         private void LiveForm_Paint(object sender, PaintEventArgs e)
         {
             if (captured != null)
             {
                 e.Graphics.DrawImageUnscaled(captured, Point.Empty);
             }
-            e.Graphics.DrawLine(new Pen(Color.Red, 3), new Point(0, 0), new Point(Width, Height));
+            //e.Graphics.DrawLine(new Pen(Color.Red, 3), new Point(0, 0), new Point(Width, Height));
         }
 
         private void RefreshTopMost()
@@ -192,8 +198,7 @@ namespace LiveFrame
             FormBorderStyle = FormBorderStyle.None;
             Opacity = 0;
             visibleMode = VisibleMode.Live;
-            label1.Visible = false;
-            label2.Visible = true;
+            labelLiveFrame.Visible = false;
             if (enableFindMe)
             {
                 Text = "LiveFrame find me!";
@@ -203,6 +208,7 @@ namespace LiveFrame
             {
                 Text = string.Empty;
                 ShowInTaskbar = false;
+                labelBeRightBack.Visible = true;
             }
             RefreshTopMost();
         }
@@ -212,8 +218,8 @@ namespace LiveFrame
             FormBorderStyle = FormBorderStyle.Sizable;
             Opacity = 0.5;
             visibleMode = VisibleMode.Edit;
-            label1.Visible = true;
-            label2.Visible = false;
+            labelLiveFrame.Visible = true;
+            labelBeRightBack.Visible = false;
             if (enableFindMe)
             {
                 Text = "LiveFrame find me!";
@@ -230,8 +236,8 @@ namespace LiveFrame
         {
             Opacity = 1;
             visibleMode = VisibleMode.Blindfold;
-            label1.Visible = false;
-            label2.Visible = true;
+            labelLiveFrame.Visible = false;
+            labelBeRightBack.Visible = true;
             if (enableFindMe)
             {
                 Text = "LiveFrame find me!";
