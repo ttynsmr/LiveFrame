@@ -23,6 +23,7 @@ namespace LiveFrame
         private HotKey blindfoldModeHotKey;
         private HotKey followModeHotKey;
         private Timer timer;
+        private bool enableFindMe = true;
 
         public LiveForm()
         {
@@ -175,6 +176,16 @@ namespace LiveFrame
             visibleMode = VisibleMode.Live;
             label1.Visible = false;
             label2.Visible = true;
+            if (enableFindMe)
+            {
+                Text = "LiveFrame find me!";
+                ShowInTaskbar = true;
+            }
+            else
+            {
+                Text = string.Empty;
+                ShowInTaskbar = false;
+            }
             RefreshTopMost();
         }
 
@@ -185,6 +196,16 @@ namespace LiveFrame
             visibleMode = VisibleMode.Edit;
             label1.Visible = true;
             label2.Visible = false;
+            if (enableFindMe)
+            {
+                Text = "LiveFrame find me!";
+                ShowInTaskbar = true;
+            }
+            else
+            {
+                Text = string.Empty;
+                ShowInTaskbar = false;
+            }
         }
 
         private void SwitchBlindfoldMode()
@@ -193,6 +214,16 @@ namespace LiveFrame
             visibleMode = VisibleMode.Blindfold;
             label1.Visible = false;
             label2.Visible = true;
+            if (enableFindMe)
+            {
+                Text = "LiveFrame find me!";
+                ShowInTaskbar = true;
+            }
+            else
+            {
+                Text = string.Empty;
+                ShowInTaskbar = false;
+            }
         }
     }
 }
