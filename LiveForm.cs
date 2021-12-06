@@ -203,6 +203,7 @@ namespace LiveFrame
             {
                 Text = "LiveFrame find me!";
                 ShowInTaskbar = true;
+                labelBeRightBack.Visible = false;
             }
             else
             {
