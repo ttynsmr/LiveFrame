@@ -23,6 +23,9 @@ namespace LiveFrame
         private HotKey blindfoldModeHotKey;
         private HotKey followModeHotKey;
         private Timer timer;
+        private bool enableFollowActiveWindow = false;
+        private bool enableFindMe = true;
+        private Bitmap captured;
 
         public LiveForm()
         {
@@ -33,10 +36,64 @@ namespace LiveFrame
             notifyIcon = new NotifyIcon
             {
                 Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
-                Visible = true
+                Visible = true,
+                Text = "LiveFrame",
+                ContextMenuStrip = new ContextMenuStrip()
             };
-            notifyIcon.Click += (sender, e) => ToggleEditMode();
-            notifyIcon.DoubleClick += (sender, e) => Application.Exit();
+            notifyIcon.MouseClick += (sender, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    ToggleEditMode();
+                }
+            };
+
+            {
+                var toolStripMenuItem = new ToolStripMenuItem("&Capture Mode", null, new ToolStripItem[] {
+                    new ToolStripMenuItem("Fast Mode", null, (sender, e) => {
+                        SetFindMeMode(false);
+                        timer.Interval = 1000 / 2;
+                    }),
+                    new ToolStripMenuItem("Safe Mode(2FPS)", null, (sender, e) => {
+                        SetFindMeMode(true);
+                        timer.Interval = 1000 / 2;
+                    }),
+                    new ToolStripMenuItem("Safe Mode(5FPS)", null, (sender, e) => {
+                        SetFindMeMode(true);
+                        timer.Interval = 1000 / 5;
+                    }),
+                    new ToolStripMenuItem("Safe Mode(10FPS)", null, (sender, e) => {
+                        SetFindMeMode(true);
+                        timer.Interval = 1000 / 10;
+                    }),
+                    new ToolStripMenuItem("Safe Mode(15FPS)", null, (sender, e) => {
+                        SetFindMeMode(true);
+                        timer.Interval = 1000 / 15;
+                    }),
+                    new ToolStripMenuItem("Safe Mode(30FPS)", null, (sender, e) => {
+                        SetFindMeMode(true);
+                        timer.Interval = 1000 / 30;
+                    }),
+                    new ToolStripMenuItem("Safe Mode(60FPS)", null, (sender, e) => {
+                        SetFindMeMode(true);
+                        timer.Interval = 1000 / 60;
+                    })
+                });
+                notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
+            }
+
+            {
+                var toolStripMenuItem = new ToolStripMenuItem("&Quit");
+                toolStripMenuItem.Click += (object sender, EventArgs e) =>
+                {
+                    notifyIcon.Dispose();
+                    Application.Exit();
+                };
+                notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
+            }
+
+            notifyIcon.ContextMenuStrip.Opening += (sender, e) => { timer.Enabled = false; };
+            notifyIcon.ContextMenuStrip.Closed += (sender, e) => { timer.Enabled = true; };
 
             Click += (sender, e) => {
                 if (((MouseEventArgs)e).Button == MouseButtons.Right)
@@ -86,7 +143,7 @@ namespace LiveFrame
             disposer.Add(followModeHotKey);
             followModeHotKey.HotKeyPush += (sender, e) =>
             {
-                timer.Enabled = !timer.Enabled;
+                enableFollowActiveWindow = !enableFollowActiveWindow;
             };
 
             blindfoldModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.B);
@@ -103,33 +160,69 @@ namespace LiveFrame
                 }
             };
 
+            DoubleBuffered = true;
+
             timer = new Timer();
             timer.Interval = 500;
             timer.Tick += (sender, e) =>
             {
                 var foregroundWindowHandle = Win32.GetForegroundWindow();
 
-                Win32.Rect rect = new Win32.Rect();
-                Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
+                if (enableFollowActiveWindow)
+                {
+                    Win32.Rect rect = new Win32.Rect();
+                    Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
 
-                // 自分のウィンドウサイズのギャップを計算してサイズを補正する
-                Win32.Rect rect1 = new Win32.Rect();
-                Win32.GetWindowRect(Handle, out rect1);
-                Win32.Rect rect2 = new Win32.Rect();
-                Win32.DwmGetWindowAttribute(Handle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect2, Marshal.SizeOf(typeof(Win32.Rect)));
+                    // 自分のウィンドウサイズのギャップを計算してサイズを補正する
+                    Win32.Rect rect1 = new Win32.Rect();
+                    Win32.GetWindowRect(Handle, out rect1);
+                    Win32.Rect rect2 = new Win32.Rect();
+                    Win32.DwmGetWindowAttribute(Handle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect2, Marshal.SizeOf(typeof(Win32.Rect)));
 
-                rect.Left += rect1.Left - rect2.Left;
-                rect.Top += rect1.Top - rect2.Top;
-                rect.Right += rect1.Right - rect2.Right;
-                rect.Bottom += rect1.Bottom - rect2.Bottom;
+                    rect.Left += rect1.Left - rect2.Left;
+                    rect.Top += rect1.Top - rect2.Top;
+                    rect.Right += rect1.Right - rect2.Right;
+                    rect.Bottom += rect1.Bottom - rect2.Bottom;
 
-                SetBounds(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
+                    SetBounds(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
+                }
+                else
+                {
+                    foregroundWindowHandle = Handle;
+                }
+
+                if (captured != null)
+                {
+                    captured.Dispose();
+                    captured = null;
+                }
+                if (enableFindMe && visibleMode != VisibleMode.Edit)
+                {
+                    captured = LiveFrame.Capture.GetWindowBitmap(foregroundWindowHandle);
+                }
 
                 RefreshTopMost();
             };
-            timer.Enabled = false;
+            timer.Enabled = true;
 
             SwitchEditMode();
+        }
+
+        protected override void OnPaintBackground(PaintEventArgs pevent)
+        {
+            // チラつき防止のため何もしない
+        }
+
+        private void LiveForm_Paint(object sender, PaintEventArgs e)
+        {
+            if (captured != null)
+            {
+                e.Graphics.DrawImageUnscaled(captured, Point.Empty);
+            }
+            else
+            {
+                e.Graphics.DrawRectangle(new Pen(Color.Black), ClientRectangle);
+            }
         }
 
         private void RefreshTopMost()
@@ -137,6 +230,29 @@ namespace LiveFrame
             TopMost = !TopMost;
             Refresh();
             TopMost = !TopMost;
+        }
+
+        private void SetFindMeMode(bool enable)
+        {
+            enableFindMe = enable;
+            SetVisibleMode(visibleMode);
+        }
+
+        private void SetVisibleMode(VisibleMode mode)
+        {
+            visibleMode = mode;
+            switch (visibleMode)
+            {
+                case VisibleMode.Edit:
+                    SwitchEditMode();
+                    break;
+                case VisibleMode.Live:
+                    SwitchLiveMode();
+                    break;
+                case VisibleMode.Blindfold:
+                    SwitchBlindfoldMode();
+                    break;
+            }
         }
 
         private void ToggleBlindfoldMode()
@@ -173,8 +289,19 @@ namespace LiveFrame
             FormBorderStyle = FormBorderStyle.None;
             Opacity = 0;
             visibleMode = VisibleMode.Live;
-            label1.Visible = false;
-            label2.Visible = true;
+            labelLiveFrame.Visible = false;
+            if (enableFindMe)
+            {
+                Text = "LiveFrame find me!";
+                ShowInTaskbar = true;
+                labelBeRightBack.Visible = false;
+            }
+            else
+            {
+                Text = string.Empty;
+                ShowInTaskbar = false;
+                labelBeRightBack.Visible = true;
+            }
             RefreshTopMost();
         }
 
@@ -183,16 +310,36 @@ namespace LiveFrame
             FormBorderStyle = FormBorderStyle.Sizable;
             Opacity = 0.5;
             visibleMode = VisibleMode.Edit;
-            label1.Visible = true;
-            label2.Visible = false;
+            labelLiveFrame.Visible = true;
+            labelBeRightBack.Visible = false;
+            if (enableFindMe)
+            {
+                Text = "LiveFrame find me!";
+                ShowInTaskbar = true;
+            }
+            else
+            {
+                Text = string.Empty;
+                ShowInTaskbar = false;
+            }
         }
 
         private void SwitchBlindfoldMode()
         {
             Opacity = 1;
             visibleMode = VisibleMode.Blindfold;
-            label1.Visible = false;
-            label2.Visible = true;
+            labelLiveFrame.Visible = false;
+            labelBeRightBack.Visible = true;
+            if (enableFindMe)
+            {
+                Text = "LiveFrame find me!";
+                ShowInTaskbar = true;
+            }
+            else
+            {
+                Text = string.Empty;
+                ShowInTaskbar = false;
+            }
         }
     }
 }

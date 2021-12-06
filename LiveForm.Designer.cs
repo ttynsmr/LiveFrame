@@ -29,35 +29,38 @@ namespace LiveFrame
         /// </summary>
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
+            this.labelLiveFrame = new System.Windows.Forms.Label();
+            this.labelBeRightBack = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
-            // label1
+            // labelLiveFrame
             // 
-            this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.label1.Enabled = false;
-            this.label1.Font = new System.Drawing.Font("MS UI Gothic", 90F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.label1.Location = new System.Drawing.Point(0, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(800, 450);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "LiveFrame";
-            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.label1.UseMnemonic = false;
+            this.labelLiveFrame.BackColor = System.Drawing.Color.Transparent;
+            this.labelLiveFrame.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.labelLiveFrame.Enabled = false;
+            this.labelLiveFrame.Font = new System.Drawing.Font("MS UI Gothic", 90F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.labelLiveFrame.Location = new System.Drawing.Point(0, 0);
+            this.labelLiveFrame.Name = "labelLiveFrame";
+            this.labelLiveFrame.Size = new System.Drawing.Size(800, 450);
+            this.labelLiveFrame.TabIndex = 0;
+            this.labelLiveFrame.Text = "LiveFrame";
+            this.labelLiveFrame.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.labelLiveFrame.UseMnemonic = false;
             // 
-            // label2
+            // labelBeRightBack
             // 
-            this.label2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.label2.Enabled = false;
-            this.label2.Font = new System.Drawing.Font("MS UI Gothic", 90F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.label2.Location = new System.Drawing.Point(0, 0);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(800, 450);
-            this.label2.TabIndex = 1;
-            this.label2.Text = "be right back";
-            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.label2.UseMnemonic = false;
+            this.labelBeRightBack.BackColor = System.Drawing.Color.Transparent;
+            this.labelBeRightBack.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.labelBeRightBack.Enabled = false;
+            this.labelBeRightBack.Font = new System.Drawing.Font("MS UI Gothic", 90F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.labelBeRightBack.Location = new System.Drawing.Point(0, 0);
+            this.labelBeRightBack.Name = "labelBeRightBack";
+            this.labelBeRightBack.Size = new System.Drawing.Size(800, 450);
+            this.labelBeRightBack.TabIndex = 1;
+            this.labelBeRightBack.Text = "be right back";
+            this.labelBeRightBack.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.labelBeRightBack.UseMnemonic = false;
+            this.labelBeRightBack.Visible = false;
             // 
             // LiveForm
             // 
@@ -66,22 +69,23 @@ namespace LiveFrame
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.ControlBox = false;
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.labelBeRightBack);
+            this.Controls.Add(this.labelLiveFrame);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "LiveForm";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.TopMost = true;
+            this.Paint += new System.Windows.Forms.PaintEventHandler(this.LiveForm_Paint);
             this.ResumeLayout(false);
 
         }
 
         #endregion
 
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label labelLiveFrame;
+        private System.Windows.Forms.Label labelBeRightBack;
     }
 }
 
