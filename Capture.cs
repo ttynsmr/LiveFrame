@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ikst.ScreenCapture;
+using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
@@ -15,11 +16,7 @@ namespace LiveFrame
                 return null;
             }
 
-            Bitmap bitmap = new Bitmap(rect.Width, rect.Height);
-            var g = Graphics.FromImage(bitmap);
-            g.CopyFromScreen(new Point(rect.Left, rect.Top), Point.Empty, new Size(rect.Width, rect.Height));
-            g.Dispose();
-            return bitmap;
+            return ScreenCapture.Capture(rect.Left, rect.Top, rect.Width, rect.Height, true);
         }
     }
 }
