@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ikst.MouseHook;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
@@ -21,12 +22,15 @@ namespace LiveFrame
         private List<HotKey> disposer = new List<HotKey>();
         private HotKey visibleModeHotKey;
         private HotKey blindfoldModeHotKey;
-        private HotKey followModeHotKey;
+        private HotKey followActiveWindowModeHotKey;
+        private HotKey followMouseModeHotKey;
         private Timer timer;
         private bool enableFollowActiveWindow = false;
+        private bool enableFollowMouse = false;
         private bool enableFindMe = true;
         private bool followSubWindow = true;
         private Bitmap captured;
+        private MouseHook mouseHook;
 
         public LiveForm()
         {
@@ -150,11 +154,18 @@ namespace LiveFrame
                 ToggleEditMode();
             };
 
-            followModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.P);
-            disposer.Add(followModeHotKey);
-            followModeHotKey.HotKeyPush += (sender, e) =>
+            followActiveWindowModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.P);
+            disposer.Add(followActiveWindowModeHotKey);
+            followActiveWindowModeHotKey.HotKeyPush += (sender, e) =>
             {
                 enableFollowActiveWindow = !enableFollowActiveWindow;
+            };
+
+            followMouseModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.M);
+            disposer.Add(followMouseModeHotKey);
+            followMouseModeHotKey.HotKeyPush += (sender, e) =>
+            {
+                ToggleMouseFollowMode();
             };
 
             blindfoldModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.B);
@@ -221,6 +232,31 @@ namespace LiveFrame
             timer.Enabled = true;
 
             SwitchEditMode();
+        }
+
+        private void ToggleMouseFollowMode()
+        {
+            enableFollowMouse = !enableFollowMouse;
+            enableFollowActiveWindow = false;
+            if (enableFollowMouse)
+            {
+                if (mouseHook == null)
+                {
+                    mouseHook = new MouseHook();
+                    mouseHook.MouseMove += (mouseStruct) => {
+                        int x = mouseStruct.pt.x - Width / 2;
+                        int y = mouseStruct.pt.y - Height / 2;
+
+                        Left = Math.Clamp(x, 0, Screen.PrimaryScreen.Bounds.Width - Width);
+                        Top = Math.Clamp(y, 0, Screen.PrimaryScreen.Bounds.Height - Height);
+                    };
+                }
+                mouseHook.Start();
+            }
+            else
+            {
+                mouseHook.Stop();
+            }
         }
 
         protected override void OnPaintBackground(PaintEventArgs pevent)
