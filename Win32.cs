@@ -35,5 +35,15 @@ namespace LiveFrame
             public int Width { get { return Right - Left; } }
             public int Height { get { return Bottom - Top; } }
         }
+
+        public enum GetAncestorFlags
+        {
+            GA_PARENT = 1,
+            GA_ROOT = 2,
+            GA_ROOTOWNER = 3
+        }
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetAncestor(IntPtr hWnd, GetAncestorFlags gaFlags);
     }
 }

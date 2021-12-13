@@ -25,6 +25,7 @@ namespace LiveFrame
         private Timer timer;
         private bool enableFollowActiveWindow = false;
         private bool enableFindMe = true;
+        private bool followSubWindow = true;
         private Bitmap captured;
 
         public LiveForm()
@@ -79,6 +80,16 @@ namespace LiveFrame
                         timer.Interval = 1000 / 60;
                     })
                 });
+                notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
+            }
+
+            {
+                var toolStripMenuItem = new ToolStripMenuItem("&Follow Sub-Window", null, (sender, e) => {
+                    var item = sender as ToolStripMenuItem;
+                    followSubWindow = !followSubWindow;
+                    item.Checked = followSubWindow;
+                });
+                toolStripMenuItem.Checked = followSubWindow;
                 notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
             }
 
@@ -167,6 +178,10 @@ namespace LiveFrame
             timer.Tick += (sender, e) =>
             {
                 var foregroundWindowHandle = Win32.GetForegroundWindow();
+                if (!followSubWindow)
+                {
+                    foregroundWindowHandle = Win32.GetAncestor(foregroundWindowHandle, Win32.GetAncestorFlags.GA_ROOTOWNER);
+                }
 
                 if (enableFollowActiveWindow)
                 {
