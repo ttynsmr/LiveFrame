@@ -27,6 +27,7 @@ namespace LiveFrame
         private bool enableFindMe = true;
         private bool followSubWindow = true;
         private Bitmap captured;
+        private ToolStripMenuItem[] subMenuItems;
 
         public LiveForm()
         {
@@ -50,36 +51,30 @@ namespace LiveFrame
             };
 
             {
-                var toolStripMenuItem = new ToolStripMenuItem("&Capture Mode", null, new ToolStripItem[] {
-                    new ToolStripMenuItem("Fast Mode", null, (sender, e) => {
-                        SetFindMeMode(false);
-                        timer.Interval = 1000 / 2;
-                    }),
+                subMenuItems = new ToolStripMenuItem[] {
                     new ToolStripMenuItem("Safe Mode(2FPS)", null, (sender, e) => {
-                        SetFindMeMode(true);
-                        timer.Interval = 1000 / 2;
+                        SetCaptureMode(sender as ToolStripMenuItem, false, 2);
                     }),
                     new ToolStripMenuItem("Safe Mode(5FPS)", null, (sender, e) => {
-                        SetFindMeMode(true);
-                        timer.Interval = 1000 / 5;
+                        SetCaptureMode(sender as ToolStripMenuItem, false, 5);
                     }),
                     new ToolStripMenuItem("Safe Mode(10FPS)", null, (sender, e) => {
-                        SetFindMeMode(true);
-                        timer.Interval = 1000 / 10;
+                        SetCaptureMode(sender as ToolStripMenuItem, false, 10);
                     }),
                     new ToolStripMenuItem("Safe Mode(15FPS)", null, (sender, e) => {
-                        SetFindMeMode(true);
-                        timer.Interval = 1000 / 15;
+                        SetCaptureMode(sender as ToolStripMenuItem, false, 15);
                     }),
                     new ToolStripMenuItem("Safe Mode(30FPS)", null, (sender, e) => {
-                        SetFindMeMode(true);
-                        timer.Interval = 1000 / 30;
+                        SetCaptureMode(sender as ToolStripMenuItem, false, 30);
                     }),
                     new ToolStripMenuItem("Safe Mode(60FPS)", null, (sender, e) => {
-                        SetFindMeMode(true);
-                        timer.Interval = 1000 / 60;
+                        SetCaptureMode(sender as ToolStripMenuItem, false, 60);
+                    }),
+                    new ToolStripMenuItem("Fast Mode", null, (sender, e) => {
+                        SetCaptureMode(sender as ToolStripMenuItem, true, 2);
                     })
-                });
+                };
+                var toolStripMenuItem = new ToolStripMenuItem("&Capture Mode", null, subMenuItems);
                 notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
             }
 
@@ -220,7 +215,24 @@ namespace LiveFrame
             };
             timer.Enabled = true;
 
+            SetCaptureMode(subMenuItems[0], false, 2);
+
             SwitchEditMode();
+        }
+
+        private void SetCaptureMode(ToolStripMenuItem selected, bool isFast, int fps)
+        {
+            SetFindMeMode(!isFast);
+            timer.Interval = 1000 / fps;
+            SelectCaptureMode(selected);
+        }
+
+        private void SelectCaptureMode(ToolStripMenuItem selected)
+        {
+            foreach (var item in subMenuItems)
+            {
+                item.Checked = item == selected;
+            }
         }
 
         protected override void OnPaintBackground(PaintEventArgs pevent)
