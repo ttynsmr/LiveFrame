@@ -17,6 +17,12 @@ namespace LiveFrame
             Blindfold
         }
 
+        enum MouseFollowMode
+        {
+            Center,
+            FrameBound
+        }
+
         private NotifyIcon notifyIcon;
         private VisibleMode visibleMode = VisibleMode.Edit;
         private List<HotKey> disposer = new List<HotKey>();
@@ -27,6 +33,7 @@ namespace LiveFrame
         private Timer timer;
         private bool enableFollowActiveWindow = false;
         private bool enableFollowMouse = false;
+        private MouseFollowMode mouseFollowMode = MouseFollowMode.Center;
         private bool enableFindMe = true;
         private bool followSubWindow = true;
         private Bitmap captured;
@@ -82,6 +89,18 @@ namespace LiveFrame
                     new ToolStripMenuItem("Safe Mode(60FPS)", null, (sender, e) => {
                         SetFindMeMode(true);
                         timer.Interval = 1000 / 60;
+                    })
+                });
+                notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
+            }
+
+            {
+                var toolStripMenuItem = new ToolStripMenuItem("&Mouse Follow Mode", null, new ToolStripItem[] {
+                    new ToolStripMenuItem("Cursor", null, (sender, e) => {
+                        mouseFollowMode = MouseFollowMode.Center;
+                    }),
+                    new ToolStripMenuItem("Frame Bound", null, (sender, e) => {
+                        mouseFollowMode = MouseFollowMode.FrameBound;
                     })
                 });
                 notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
@@ -165,7 +184,7 @@ namespace LiveFrame
             disposer.Add(followMouseModeHotKey);
             followMouseModeHotKey.HotKeyPush += (sender, e) =>
             {
-                ToggleMouseFollowMode();
+                ToggleMouseFollowModeEnable();
             };
 
             blindfoldModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.B);
@@ -234,7 +253,7 @@ namespace LiveFrame
             SwitchEditMode();
         }
 
-        private void ToggleMouseFollowMode()
+        private void ToggleMouseFollowModeEnable()
         {
             enableFollowMouse = !enableFollowMouse;
             enableFollowActiveWindow = false;
@@ -244,11 +263,47 @@ namespace LiveFrame
                 {
                     mouseHook = new MouseHook();
                     mouseHook.MouseMove += (mouseStruct) => {
-                        int x = mouseStruct.pt.x - Width / 2;
-                        int y = mouseStruct.pt.y - Height / 2;
+                        switch(mouseFollowMode)
+                        {
+                            case MouseFollowMode.Center:
+                                {
+                                    int x = mouseStruct.pt.x - Width / 2;
+                                    int y = mouseStruct.pt.y - Height / 2;
 
-                        Left = Math.Clamp(x, 0, Screen.PrimaryScreen.Bounds.Width - Width);
-                        Top = Math.Clamp(y, 0, Screen.PrimaryScreen.Bounds.Height - Height);
+                                    Left = Math.Clamp(x, 0, Screen.PrimaryScreen.Bounds.Width - Width);
+                                    Top = Math.Clamp(y, 0, Screen.PrimaryScreen.Bounds.Height - Height);
+                                }
+                                break;
+                            case MouseFollowMode.FrameBound:
+                                {
+                                    int x = mouseStruct.pt.x;
+                                    int y = mouseStruct.pt.y;
+
+                                    if (x < Left)
+                                    {
+                                        Left = x;
+                                    }
+
+                                    if (x > Left + Width)
+                                    {
+                                        Left = x - Width;
+                                    }
+
+                                    if (y < Top)
+                                    {
+                                        Top = y;
+                                    }
+
+                                    if (y > Top + Height)
+                                    {
+                                        Top = y - Height;
+                                    }
+
+                                    Left = Math.Clamp(Left, 0, Screen.PrimaryScreen.Bounds.Width - Width);
+                                    Top = Math.Clamp(Top, 0, Screen.PrimaryScreen.Bounds.Height - Height);
+                                }
+                                break;
+                        }
                     };
                 }
                 mouseHook.Start();
@@ -256,6 +311,19 @@ namespace LiveFrame
             else
             {
                 mouseHook.Stop();
+            }
+        }
+
+        private void ToggleMouseFollowMode()
+        {
+            switch (mouseFollowMode)
+            {
+                case MouseFollowMode.Center:
+                    mouseFollowMode = MouseFollowMode.FrameBound;
+                    break;
+                case MouseFollowMode.FrameBound:
+                    mouseFollowMode = MouseFollowMode.Center;
+                    break;
             }
         }
 
