@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ikst.MouseHook;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
@@ -16,18 +17,28 @@ namespace LiveFrame
             Blindfold
         }
 
+        enum MouseFollowMode
+        {
+            Center,
+            FrameBound
+        }
+
         private NotifyIcon notifyIcon;
         private VisibleMode visibleMode = VisibleMode.Edit;
         private List<HotKey> disposer = new List<HotKey>();
         private HotKey visibleModeHotKey;
         private HotKey blindfoldModeHotKey;
-        private HotKey followModeHotKey;
+        private HotKey followActiveWindowModeHotKey;
+        private HotKey followMouseModeHotKey;
         private Timer timer;
         private bool enableFollowActiveWindow = false;
+        private bool enableFollowMouse = false;
+        private MouseFollowMode mouseFollowMode = MouseFollowMode.Center;
         private bool enableFindMe = true;
         private bool followSubWindow = true;
         private Bitmap captured;
         private ToolStripMenuItem[] subMenuItems;
+        private MouseHook mouseHook;
 
         public LiveForm()
         {
@@ -75,6 +86,18 @@ namespace LiveFrame
                     })
                 };
                 var toolStripMenuItem = new ToolStripMenuItem("&Capture Mode", null, subMenuItems);
+                notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
+            }
+
+            {
+                var toolStripMenuItem = new ToolStripMenuItem("&Mouse Follow Mode", null, new ToolStripItem[] {
+                    new ToolStripMenuItem("Cursor", null, (sender, e) => {
+                        mouseFollowMode = MouseFollowMode.Center;
+                    }),
+                    new ToolStripMenuItem("Frame Bound", null, (sender, e) => {
+                        mouseFollowMode = MouseFollowMode.FrameBound;
+                    })
+                });
                 notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
             }
 
@@ -145,11 +168,18 @@ namespace LiveFrame
                 ToggleEditMode();
             };
 
-            followModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.P);
-            disposer.Add(followModeHotKey);
-            followModeHotKey.HotKeyPush += (sender, e) =>
+            followActiveWindowModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.P);
+            disposer.Add(followActiveWindowModeHotKey);
+            followActiveWindowModeHotKey.HotKeyPush += (sender, e) =>
             {
                 enableFollowActiveWindow = !enableFollowActiveWindow;
+            };
+
+            followMouseModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.M);
+            disposer.Add(followMouseModeHotKey);
+            followMouseModeHotKey.HotKeyPush += (sender, e) =>
+            {
+                ToggleMouseFollowModeEnable();
             };
 
             blindfoldModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.B);
@@ -232,6 +262,80 @@ namespace LiveFrame
             foreach (var item in subMenuItems)
             {
                 item.Checked = item == selected;
+            }
+        }
+
+        private void ToggleMouseFollowModeEnable()
+        {
+            enableFollowMouse = !enableFollowMouse;
+            enableFollowActiveWindow = false;
+            if (enableFollowMouse)
+            {
+                if (mouseHook == null)
+                {
+                    mouseHook = new MouseHook();
+                    mouseHook.MouseMove += (mouseStruct) => {
+                        switch(mouseFollowMode)
+                        {
+                            case MouseFollowMode.Center:
+                                {
+                                    int x = mouseStruct.pt.x - Width / 2;
+                                    int y = mouseStruct.pt.y - Height / 2;
+
+                                    Left = Math.Clamp(x, 0, Screen.PrimaryScreen.Bounds.Width - Width);
+                                    Top = Math.Clamp(y, 0, Screen.PrimaryScreen.Bounds.Height - Height);
+                                }
+                                break;
+                            case MouseFollowMode.FrameBound:
+                                {
+                                    int x = mouseStruct.pt.x;
+                                    int y = mouseStruct.pt.y;
+
+                                    if (x < Left)
+                                    {
+                                        Left = x;
+                                    }
+
+                                    if (x > Left + Width)
+                                    {
+                                        Left = x - Width;
+                                    }
+
+                                    if (y < Top)
+                                    {
+                                        Top = y;
+                                    }
+
+                                    if (y > Top + Height)
+                                    {
+                                        Top = y - Height;
+                                    }
+
+                                    Left = Math.Clamp(Left, 0, Screen.PrimaryScreen.Bounds.Width - Width);
+                                    Top = Math.Clamp(Top, 0, Screen.PrimaryScreen.Bounds.Height - Height);
+                                }
+                                break;
+                        }
+                    };
+                }
+                mouseHook.Start();
+            }
+            else
+            {
+                mouseHook.Stop();
+            }
+        }
+
+        private void ToggleMouseFollowMode()
+        {
+            switch (mouseFollowMode)
+            {
+                case MouseFollowMode.Center:
+                    mouseFollowMode = MouseFollowMode.FrameBound;
+                    break;
+                case MouseFollowMode.FrameBound:
+                    mouseFollowMode = MouseFollowMode.Center;
+                    break;
             }
         }
 
