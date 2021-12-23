@@ -23,23 +23,23 @@ namespace LiveFrame
             FrameBound
         }
 
-        private NotifyIcon notifyIcon;
         private VisibleMode visibleMode = VisibleMode.Edit;
-        private List<HotKey> disposer = new List<HotKey>();
-        private HotKey visibleModeHotKey;
-        private HotKey blindfoldModeHotKey;
-        private HotKey followActiveWindowModeHotKey;
-        private HotKey followMouseModeHotKey;
-        private Timer timer;
+        private MouseFollowMode mouseFollowMode = MouseFollowMode.Center;
+        private MouseHook mouseHook;
+        private readonly NotifyIcon notifyIcon;
+        private readonly List<HotKey> disposer = new();
+        private readonly HotKey visibleModeHotKey;
+        private readonly HotKey blindfoldModeHotKey;
+        private readonly HotKey followActiveWindowModeHotKey;
+        private readonly HotKey followMouseModeHotKey;
+        private readonly Timer timer;
         private bool enableFollowActiveWindow = false;
         private bool enableFollowMouse = false;
-        private MouseFollowMode mouseFollowMode = MouseFollowMode.Center;
         private bool enableFindMe = true;
         private bool followSubWindow = true;
         private Bitmap captured;
         private ToolStripMenuItem[] subMenuCaptureModeItems;
         private ToolStripMenuItem[] subMenuMouseFollowModeItems;
-        private MouseHook mouseHook;
 
         public LiveForm()
         {
@@ -47,86 +47,10 @@ namespace LiveFrame
 
             Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
 
-            notifyIcon = new NotifyIcon
-            {
-                Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
-                Visible = true,
-                Text = "LiveFrame",
-                ContextMenuStrip = new ContextMenuStrip()
-            };
-            notifyIcon.MouseClick += (sender, e) =>
-            {
-                if (e.Button == MouseButtons.Left)
-                {
-                    ToggleEditMode();
-                }
-            };
+            notifyIcon = InitializeTrayIcon();
 
+            Click += (sender, e) =>
             {
-                subMenuCaptureModeItems = new ToolStripMenuItem[] {
-                    new ToolStripMenuItem("Safe Mode(2FPS)", null, (sender, e) => {
-                        SetCaptureMode(sender as ToolStripMenuItem, false, 2);
-                    }),
-                    new ToolStripMenuItem("Safe Mode(5FPS)", null, (sender, e) => {
-                        SetCaptureMode(sender as ToolStripMenuItem, false, 5);
-                    }),
-                    new ToolStripMenuItem("Safe Mode(10FPS)", null, (sender, e) => {
-                        SetCaptureMode(sender as ToolStripMenuItem, false, 10);
-                    }),
-                    new ToolStripMenuItem("Safe Mode(15FPS)", null, (sender, e) => {
-                        SetCaptureMode(sender as ToolStripMenuItem, false, 15);
-                    }),
-                    new ToolStripMenuItem("Safe Mode(30FPS)", null, (sender, e) => {
-                        SetCaptureMode(sender as ToolStripMenuItem, false, 30);
-                    }),
-                    new ToolStripMenuItem("Safe Mode(60FPS)", null, (sender, e) => {
-                        SetCaptureMode(sender as ToolStripMenuItem, false, 60);
-                    }),
-                    new ToolStripMenuItem("Fast Mode", null, (sender, e) => {
-                        SetCaptureMode(sender as ToolStripMenuItem, true, 2);
-                    })
-                };
-                var toolStripMenuItem = new ToolStripMenuItem("&Capture Mode", null, subMenuCaptureModeItems);
-                notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
-            }
-
-            {
-                subMenuMouseFollowModeItems = new ToolStripMenuItem[] {
-                    new ToolStripMenuItem("Cursor", null, (sender, e) => {
-                        SelectMouseFollowMode(sender as ToolStripMenuItem, MouseFollowMode.Center);
-                    }),
-                    new ToolStripMenuItem("Frame Bound", null, (sender, e) => {
-                        SelectMouseFollowMode(sender as ToolStripMenuItem, MouseFollowMode.FrameBound);
-                    })
-                };
-                var toolStripMenuItem = new ToolStripMenuItem("&Mouse Follow Mode", null, subMenuMouseFollowModeItems);
-                notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
-            }
-
-            {
-                var toolStripMenuItem = new ToolStripMenuItem("&Follow Sub-Window", null, (sender, e) => {
-                    var item = sender as ToolStripMenuItem;
-                    followSubWindow = !followSubWindow;
-                    item.Checked = followSubWindow;
-                });
-                toolStripMenuItem.Checked = followSubWindow;
-                notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
-            }
-
-            {
-                var toolStripMenuItem = new ToolStripMenuItem("&Quit");
-                toolStripMenuItem.Click += (object sender, EventArgs e) =>
-                {
-                    notifyIcon.Dispose();
-                    Application.Exit();
-                };
-                notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
-            }
-
-            notifyIcon.ContextMenuStrip.Opening += (sender, e) => { timer.Enabled = false; };
-            notifyIcon.ContextMenuStrip.Closed += (sender, e) => { timer.Enabled = true; };
-
-            Click += (sender, e) => {
                 if (((MouseEventArgs)e).Button == MouseButtons.Right)
                 {
                     ToggleEditMode();
@@ -138,7 +62,7 @@ namespace LiveFrame
                 if (e.Button == MouseButtons.Left)
                 {
                     Win32.ReleaseCapture();
-                    Win32.SendMessage(Handle, Win32.WM_NCLBUTTONDOWN, Win32.HT_CAPTION, 0);
+                    _ = Win32.SendMessage(Handle, Win32.WM_NCLBUTTONDOWN, Win32.HT_CAPTION, 0);
                 }
             };
 
@@ -153,14 +77,22 @@ namespace LiveFrame
             MouseWheel += (sender, e) =>
             {
                 // zoom in / out
-                float aspectRatio = (float)Width / (float)Height;
+                float aspectRatio = Width / (float)Height;
                 int zoom = e.Delta;
                 float deltaWidth = zoom * aspectRatio / 10;
                 float deltaHeight = zoom * 1.0f / 10;
                 SetBounds((int)(Left + deltaWidth),
-                                 (int)(Top + deltaHeight),
-                                 (int)(Width - deltaWidth * 2),
-                                 (int)(Height - deltaHeight * 2));
+                    (int)(Top + deltaHeight),
+                    (int)(Width - deltaWidth * 2),
+                    (int)(Height - deltaHeight * 2));
+            };
+
+            Disposed += (sender, e) =>
+            {
+                foreach (var d in disposer)
+                {
+                    d.Dispose();
+                }
             };
 
             visibleModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.L);
@@ -191,17 +123,12 @@ namespace LiveFrame
                 ToggleBlindfoldMode();
             };
 
-            Disposed += (sender, e) => {
-                foreach (var d in disposer)
-                {
-                    d.Dispose();
-                }
-            };
-
             DoubleBuffered = true;
 
-            timer = new Timer();
-            timer.Interval = 500;
+            timer = new Timer
+            {
+                Interval = 500
+            };
             timer.Tick += (sender, e) =>
             {
                 var foregroundWindowHandle = Win32.GetForegroundWindow();
@@ -212,14 +139,14 @@ namespace LiveFrame
 
                 if (enableFollowActiveWindow)
                 {
-                    Win32.Rect rect = new Win32.Rect();
-                    Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
+                    Win32.Rect rect = new();
+                    _ = Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
 
                     // 自分のウィンドウサイズのギャップを計算してサイズを補正する
-                    Win32.Rect rect1 = new Win32.Rect();
+                    Win32.Rect rect1 = new();
                     Win32.GetWindowRect(Handle, out rect1);
-                    Win32.Rect rect2 = new Win32.Rect();
-                    Win32.DwmGetWindowAttribute(Handle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect2, Marshal.SizeOf(typeof(Win32.Rect)));
+                    Win32.Rect rect2 = new();
+                    _ = Win32.DwmGetWindowAttribute(Handle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect2, Marshal.SizeOf(typeof(Win32.Rect)));
 
                     rect.Left += rect1.Left - rect2.Left;
                     rect.Top += rect1.Top - rect2.Top;
@@ -251,6 +178,83 @@ namespace LiveFrame
             SelectMouseFollowMode(subMenuMouseFollowModeItems[0], mouseFollowMode);
 
             SwitchEditMode();
+        }
+
+        private NotifyIcon InitializeTrayIcon()
+        {
+            var notifyIcon = new NotifyIcon
+            {
+                Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location),
+                Visible = true,
+                Text = "LiveFrame",
+                ContextMenuStrip = new ContextMenuStrip()
+            };
+            notifyIcon.MouseClick += (sender, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    ToggleEditMode();
+                }
+            };
+
+            subMenuCaptureModeItems = new ToolStripMenuItem[] {
+                new ToolStripMenuItem("Safe Mode(2FPS)", null, (sender, e) => {
+                    SetCaptureMode(sender as ToolStripMenuItem, false, 2);
+                }),
+                new ToolStripMenuItem("Safe Mode(5FPS)", null, (sender, e) => {
+                    SetCaptureMode(sender as ToolStripMenuItem, false, 5);
+                }),
+                new ToolStripMenuItem("Safe Mode(10FPS)", null, (sender, e) => {
+                    SetCaptureMode(sender as ToolStripMenuItem, false, 10);
+                }),
+                new ToolStripMenuItem("Safe Mode(15FPS)", null, (sender, e) => {
+                    SetCaptureMode(sender as ToolStripMenuItem, false, 15);
+                }),
+                new ToolStripMenuItem("Safe Mode(30FPS)", null, (sender, e) => {
+                    SetCaptureMode(sender as ToolStripMenuItem, false, 30);
+                }),
+                new ToolStripMenuItem("Safe Mode(60FPS)", null, (sender, e) => {
+                    SetCaptureMode(sender as ToolStripMenuItem, false, 60);
+                }),
+                new ToolStripMenuItem("Fast Mode", null, (sender, e) => {
+                    SetCaptureMode(sender as ToolStripMenuItem, true, 2);
+                })
+            };
+            var captureModeSubMenu = new ToolStripMenuItem("&Capture Mode", null, subMenuCaptureModeItems);
+            notifyIcon.ContextMenuStrip.Items.Add(captureModeSubMenu);
+
+            subMenuMouseFollowModeItems = new ToolStripMenuItem[] {
+                new ToolStripMenuItem("Cursor", null, (sender, e) => {
+                    SelectMouseFollowMode(sender as ToolStripMenuItem, MouseFollowMode.Center);
+                }),
+                new ToolStripMenuItem("Frame Bound", null, (sender, e) => {
+                    SelectMouseFollowMode(sender as ToolStripMenuItem, MouseFollowMode.FrameBound);
+                })
+            };
+            var mouseFollowModeSubMenu = new ToolStripMenuItem("&Mouse Follow Mode", null, subMenuMouseFollowModeItems);
+            notifyIcon.ContextMenuStrip.Items.Add(mouseFollowModeSubMenu);
+
+            var followSubWindowMenu = new ToolStripMenuItem("&Follow Sub-Window", null, (sender, e) =>
+            {
+                var item = sender as ToolStripMenuItem;
+                followSubWindow = !followSubWindow;
+                item.Checked = followSubWindow;
+            });
+            followSubWindowMenu.Checked = followSubWindow;
+            notifyIcon.ContextMenuStrip.Items.Add(followSubWindowMenu);
+
+            var quitMenu = new ToolStripMenuItem("&Quit");
+            quitMenu.Click += (object sender, EventArgs e) =>
+            {
+                notifyIcon.Dispose();
+                Application.Exit();
+            };
+            notifyIcon.ContextMenuStrip.Items.Add(quitMenu);
+
+            notifyIcon.ContextMenuStrip.Opening += (sender, e) => { timer.Enabled = false; };
+            notifyIcon.ContextMenuStrip.Closed += (sender, e) => { timer.Enabled = true; };
+
+            return notifyIcon;
         }
 
         private void SetMouseFollowMode(MouseFollowMode mode)
@@ -291,7 +295,8 @@ namespace LiveFrame
                 if (mouseHook == null)
                 {
                     mouseHook = new MouseHook();
-                    mouseHook.MouseMove += (mouseStruct) => {
+                    mouseHook.MouseMove += (mouseStruct) =>
+                    {
                         switch (mouseFollowMode)
                         {
                             case MouseFollowMode.Center:
@@ -420,7 +425,7 @@ namespace LiveFrame
 
         private void ToggleEditMode()
         {
-            switch(visibleMode)
+            switch (visibleMode)
             {
                 case VisibleMode.Edit:
                     SwitchLiveMode();

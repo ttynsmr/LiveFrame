@@ -9,8 +9,7 @@ namespace LiveFrame
     {
         static public Bitmap GetWindowBitmap(IntPtr hWnd)
         {
-            Win32.Rect rect;
-            Win32.DwmGetWindowAttribute(hWnd, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
+            _ = Win32.DwmGetWindowAttribute(hWnd, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out Win32.Rect rect, Marshal.SizeOf(typeof(Win32.Rect)));
             if (rect.Width == 0 || rect.Height == 0)
             {
                 return null;
