@@ -37,7 +37,8 @@ namespace LiveFrame
         private bool enableFindMe = true;
         private bool followSubWindow = true;
         private Bitmap captured;
-        private ToolStripMenuItem[] subMenuItems;
+        private ToolStripMenuItem[] subMenuCaptureModeItems;
+        private ToolStripMenuItem[] subMenuMouseFollowModeItems;
         private MouseHook mouseHook;
 
         public LiveForm()
@@ -62,7 +63,7 @@ namespace LiveFrame
             };
 
             {
-                subMenuItems = new ToolStripMenuItem[] {
+                subMenuCaptureModeItems = new ToolStripMenuItem[] {
                     new ToolStripMenuItem("Safe Mode(2FPS)", null, (sender, e) => {
                         SetCaptureMode(sender as ToolStripMenuItem, false, 2);
                     }),
@@ -85,19 +86,20 @@ namespace LiveFrame
                         SetCaptureMode(sender as ToolStripMenuItem, true, 2);
                     })
                 };
-                var toolStripMenuItem = new ToolStripMenuItem("&Capture Mode", null, subMenuItems);
+                var toolStripMenuItem = new ToolStripMenuItem("&Capture Mode", null, subMenuCaptureModeItems);
                 notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
             }
 
             {
-                var toolStripMenuItem = new ToolStripMenuItem("&Mouse Follow Mode", null, new ToolStripItem[] {
+                subMenuMouseFollowModeItems = new ToolStripMenuItem[] {
                     new ToolStripMenuItem("Cursor", null, (sender, e) => {
-                        mouseFollowMode = MouseFollowMode.Center;
+                        SelectMouseFollowMode(sender as ToolStripMenuItem, MouseFollowMode.Center);
                     }),
                     new ToolStripMenuItem("Frame Bound", null, (sender, e) => {
-                        mouseFollowMode = MouseFollowMode.FrameBound;
+                        SelectMouseFollowMode(sender as ToolStripMenuItem, MouseFollowMode.FrameBound);
                     })
-                });
+                };
+                var toolStripMenuItem = new ToolStripMenuItem("&Mouse Follow Mode", null, subMenuMouseFollowModeItems);
                 notifyIcon.ContextMenuStrip.Items.Add(toolStripMenuItem);
             }
 
@@ -245,9 +247,24 @@ namespace LiveFrame
             };
             timer.Enabled = true;
 
-            SetCaptureMode(subMenuItems[0], false, 2);
+            SetCaptureMode(subMenuCaptureModeItems[0], false, 2);
+            SelectMouseFollowMode(subMenuMouseFollowModeItems[0], mouseFollowMode);
 
             SwitchEditMode();
+        }
+
+        private void SetMouseFollowMode(MouseFollowMode mode)
+        {
+            mouseFollowMode = mode;
+        }
+
+        private void SelectMouseFollowMode(ToolStripMenuItem selected, MouseFollowMode mode)
+        {
+            SetMouseFollowMode(mode);
+            foreach (var item in subMenuMouseFollowModeItems)
+            {
+                item.Checked = item == selected;
+            }
         }
 
         private void SetCaptureMode(ToolStripMenuItem selected, bool isFast, int fps)
@@ -259,7 +276,7 @@ namespace LiveFrame
 
         private void SelectCaptureMode(ToolStripMenuItem selected)
         {
-            foreach (var item in subMenuItems)
+            foreach (var item in subMenuCaptureModeItems)
             {
                 item.Checked = item == selected;
             }
@@ -275,7 +292,7 @@ namespace LiveFrame
                 {
                     mouseHook = new MouseHook();
                     mouseHook.MouseMove += (mouseStruct) => {
-                        switch(mouseFollowMode)
+                        switch (mouseFollowMode)
                         {
                             case MouseFollowMode.Center:
                                 {
