@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -26,7 +27,7 @@ namespace LiveFrame
         }
 
         private VisibleMode visibleMode = VisibleMode.Edit;
-        private FollowMode followMode = FollowMode.MouseCenter;
+        private FollowMode followMode = FollowMode.None;
         private MouseHook mouseHook;
         private readonly NotifyIcon notifyIcon;
         private readonly List<HotKey> disposer = new();
@@ -39,7 +40,7 @@ namespace LiveFrame
         private bool followSubWindow = true;
         private Bitmap captured;
         private ToolStripMenuItem[] subMenuCaptureModeItems;
-        private ToolStripMenuItem[] subMenuMouseFollowModeItems;
+        private Dictionary<FollowMode, ToolStripMenuItem> subMenuMouseFollowModeItems = new();
 
         public LiveForm()
         {
@@ -185,7 +186,7 @@ namespace LiveFrame
             timer.Enabled = true;
 
             SetCaptureMode(subMenuCaptureModeItems[0], false, 2);
-            SelectFollowMode(subMenuMouseFollowModeItems[0], followMode);
+            SetFollowMode(followMode);
 
             SwitchEditMode();
         }
@@ -233,15 +234,25 @@ namespace LiveFrame
             var captureModeSubMenu = new ToolStripMenuItem("&Capture Mode", null, subMenuCaptureModeItems);
             notifyIcon.ContextMenuStrip.Items.Add(captureModeSubMenu);
 
-            subMenuMouseFollowModeItems = new ToolStripMenuItem[] {
-                new ToolStripMenuItem("Cursor", null, (sender, e) => {
-                    SelectFollowMode(sender as ToolStripMenuItem, FollowMode.MouseCenter);
-                }),
-                new ToolStripMenuItem("Frame Bound", null, (sender, e) => {
-                    SelectFollowMode(sender as ToolStripMenuItem, FollowMode.MouseFrameBound);
-                })
+            subMenuMouseFollowModeItems = new Dictionary<FollowMode, ToolStripMenuItem> {
+                {
+                    FollowMode.None,
+                    new ToolStripMenuItem("None", null, (sender, e) => { SetFollowMode(FollowMode.None); })
+                },
+                {
+                    FollowMode.ActiveWindow,
+                    new ToolStripMenuItem("Active Window", null, (sender, e) => { SetFollowMode(FollowMode.ActiveWindow); })
+                },
+                {
+                    FollowMode.MouseCenter,
+                    new ToolStripMenuItem("Mouse Cursor", null, (sender, e) => { SetFollowMode(FollowMode.MouseCenter); })
+                },
+                {
+                    FollowMode.MouseFrameBound,
+                    new ToolStripMenuItem("Mouse Frame Bound", null, (sender, e) => { SetFollowMode(FollowMode.MouseFrameBound); })
+                }
             };
-            var mouseFollowModeSubMenu = new ToolStripMenuItem("&Mouse Follow Mode", null, subMenuMouseFollowModeItems);
+            var mouseFollowModeSubMenu = new ToolStripMenuItem("&Follow Mode", null, subMenuMouseFollowModeItems.Values.ToArray());
             notifyIcon.ContextMenuStrip.Items.Add(mouseFollowModeSubMenu);
 
             var followSubWindowMenu = new ToolStripMenuItem("&Follow Sub-Window", null, (sender, e) =>
@@ -270,14 +281,9 @@ namespace LiveFrame
         private void SetFollowMode(FollowMode mode)
         {
             followMode = mode;
-        }
-
-        private void SelectFollowMode(ToolStripMenuItem selected, FollowMode mode)
-        {
-            SetFollowMode(mode);
             foreach (var item in subMenuMouseFollowModeItems)
             {
-                item.Checked = item == selected;
+                item.Value.Checked = item.Key == mode;
             }
         }
 
