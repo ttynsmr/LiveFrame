@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -17,14 +18,16 @@ namespace LiveFrame
             Blindfold
         }
 
-        enum MouseFollowMode
+        enum FollowMode
         {
-            Center,
-            FrameBound
+            None,
+            ActiveWindow,
+            MouseCenter,
+            MouseFrameBound
         }
 
         private VisibleMode visibleMode = VisibleMode.Edit;
-        private MouseFollowMode mouseFollowMode = MouseFollowMode.Center;
+        private FollowMode followMode = FollowMode.None;
         private MouseHook mouseHook;
         private readonly NotifyIcon notifyIcon;
         private readonly List<HotKey> disposer = new();
@@ -33,13 +36,11 @@ namespace LiveFrame
         private readonly HotKey followActiveWindowModeHotKey;
         private readonly HotKey followMouseModeHotKey;
         private readonly Timer timer;
-        private bool enableFollowActiveWindow = false;
-        private bool enableFollowMouse = false;
         private bool enableFindMe = true;
         private bool followSubWindow = true;
         private Bitmap captured;
         private ToolStripMenuItem[] subMenuCaptureModeItems;
-        private ToolStripMenuItem[] subMenuMouseFollowModeItems;
+        private Dictionary<FollowMode, ToolStripMenuItem> subMenuMouseFollowModeItems = new();
 
         public LiveForm()
         {
@@ -106,7 +107,17 @@ namespace LiveFrame
             disposer.Add(followActiveWindowModeHotKey);
             followActiveWindowModeHotKey.HotKeyPush += (sender, e) =>
             {
-                enableFollowActiveWindow = !enableFollowActiveWindow;
+                switch (followMode)
+                {
+                    case FollowMode.None:
+                    case FollowMode.MouseCenter:
+                    case FollowMode.MouseFrameBound:
+                        SetFollowMode(FollowMode.ActiveWindow);
+                        break;
+                    case FollowMode.ActiveWindow:
+                        SetFollowMode(FollowMode.None);
+                        break;
+                }
             };
 
             followMouseModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.M);
@@ -137,7 +148,7 @@ namespace LiveFrame
                     foregroundWindowHandle = Win32.GetAncestor(foregroundWindowHandle, Win32.GetAncestorFlags.GA_ROOTOWNER);
                 }
 
-                if (enableFollowActiveWindow)
+                if (followMode == FollowMode.ActiveWindow)
                 {
                     Win32.Rect rect = new();
                     _ = Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
@@ -175,7 +186,7 @@ namespace LiveFrame
             timer.Enabled = true;
 
             SetCaptureMode(subMenuCaptureModeItems[0], false, 2);
-            SelectMouseFollowMode(subMenuMouseFollowModeItems[0], mouseFollowMode);
+            SetFollowMode(followMode);
 
             SwitchEditMode();
         }
@@ -223,15 +234,25 @@ namespace LiveFrame
             var captureModeSubMenu = new ToolStripMenuItem("&Capture Mode", null, subMenuCaptureModeItems);
             notifyIcon.ContextMenuStrip.Items.Add(captureModeSubMenu);
 
-            subMenuMouseFollowModeItems = new ToolStripMenuItem[] {
-                new ToolStripMenuItem("Cursor", null, (sender, e) => {
-                    SelectMouseFollowMode(sender as ToolStripMenuItem, MouseFollowMode.Center);
-                }),
-                new ToolStripMenuItem("Frame Bound", null, (sender, e) => {
-                    SelectMouseFollowMode(sender as ToolStripMenuItem, MouseFollowMode.FrameBound);
-                })
+            subMenuMouseFollowModeItems = new Dictionary<FollowMode, ToolStripMenuItem> {
+                {
+                    FollowMode.None,
+                    new ToolStripMenuItem("None", null, (sender, e) => { SetFollowMode(FollowMode.None); })
+                },
+                {
+                    FollowMode.ActiveWindow,
+                    new ToolStripMenuItem("Active Window", null, (sender, e) => { SetFollowMode(FollowMode.ActiveWindow); })
+                },
+                {
+                    FollowMode.MouseCenter,
+                    new ToolStripMenuItem("Mouse Cursor", null, (sender, e) => { SetFollowMode(FollowMode.MouseCenter); })
+                },
+                {
+                    FollowMode.MouseFrameBound,
+                    new ToolStripMenuItem("Mouse Frame Bound", null, (sender, e) => { SetFollowMode(FollowMode.MouseFrameBound); })
+                }
             };
-            var mouseFollowModeSubMenu = new ToolStripMenuItem("&Mouse Follow Mode", null, subMenuMouseFollowModeItems);
+            var mouseFollowModeSubMenu = new ToolStripMenuItem("&Follow Mode", null, subMenuMouseFollowModeItems.Values.ToArray());
             notifyIcon.ContextMenuStrip.Items.Add(mouseFollowModeSubMenu);
 
             var followSubWindowMenu = new ToolStripMenuItem("&Follow Sub-Window", null, (sender, e) =>
@@ -257,17 +278,12 @@ namespace LiveFrame
             return notifyIcon;
         }
 
-        private void SetMouseFollowMode(MouseFollowMode mode)
+        private void SetFollowMode(FollowMode mode)
         {
-            mouseFollowMode = mode;
-        }
-
-        private void SelectMouseFollowMode(ToolStripMenuItem selected, MouseFollowMode mode)
-        {
-            SetMouseFollowMode(mode);
+            followMode = mode;
             foreach (var item in subMenuMouseFollowModeItems)
             {
-                item.Checked = item == selected;
+                item.Value.Checked = item.Key == mode;
             }
         }
 
@@ -288,18 +304,18 @@ namespace LiveFrame
 
         private void ToggleMouseFollowModeEnable()
         {
-            enableFollowMouse = !enableFollowMouse;
-            enableFollowActiveWindow = false;
-            if (enableFollowMouse)
+            ToggleMouseFollowMode();
+
+            if (followMode == FollowMode.MouseCenter || followMode == FollowMode.MouseFrameBound)
             {
                 if (mouseHook == null)
                 {
                     mouseHook = new MouseHook();
                     mouseHook.MouseMove += (mouseStruct) =>
                     {
-                        switch (mouseFollowMode)
+                        switch (followMode)
                         {
-                            case MouseFollowMode.Center:
+                            case FollowMode.MouseCenter:
                                 {
                                     int x = mouseStruct.pt.x - Width / 2;
                                     int y = mouseStruct.pt.y - Height / 2;
@@ -308,7 +324,7 @@ namespace LiveFrame
                                     Top = Math.Clamp(y, 0, Screen.PrimaryScreen.Bounds.Height - Height);
                                 }
                                 break;
-                            case MouseFollowMode.FrameBound:
+                            case FollowMode.MouseFrameBound:
                                 {
                                     int x = mouseStruct.pt.x;
                                     int y = mouseStruct.pt.y;
@@ -350,13 +366,17 @@ namespace LiveFrame
 
         private void ToggleMouseFollowMode()
         {
-            switch (mouseFollowMode)
+            switch (followMode)
             {
-                case MouseFollowMode.Center:
-                    mouseFollowMode = MouseFollowMode.FrameBound;
+                case FollowMode.MouseCenter:
+                    SetFollowMode(FollowMode.MouseFrameBound);
                     break;
-                case MouseFollowMode.FrameBound:
-                    mouseFollowMode = MouseFollowMode.Center;
+                case FollowMode.None:
+                case FollowMode.ActiveWindow:
+                case FollowMode.MouseFrameBound:
+                    SetFollowMode(FollowMode.MouseCenter);
+                    break;
+                default:
                     break;
             }
         }
