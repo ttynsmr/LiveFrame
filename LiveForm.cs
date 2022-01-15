@@ -176,7 +176,7 @@ namespace LiveFrame
                     captured.Dispose();
                     captured = null;
                 }
-                if (enableFindMe && visibleMode != VisibleMode.Edit)
+                if (enableFindMe && visibleMode != VisibleMode.Edit && visibleMode != VisibleMode.Blindfold)
                 {
                     captured = LiveFrame.Capture.GetWindowBitmap(foregroundWindowHandle);
                 }
@@ -499,7 +499,14 @@ namespace LiveFrame
 
         private void SwitchBlindfoldMode()
         {
-            Opacity = 1;
+            if (enableFindMe)
+            {
+                Opacity = 0;
+            }
+            else
+            {
+                Opacity = 1;
+            }
             visibleMode = VisibleMode.Blindfold;
             labelLiveFrame.Visible = false;
             labelBeRightBack.Visible = true;
