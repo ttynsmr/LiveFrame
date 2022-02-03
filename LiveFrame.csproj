@@ -23,6 +23,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>app-icon.ico</ApplicationIcon>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="app-icon.ico" />
