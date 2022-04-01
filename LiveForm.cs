@@ -134,6 +134,13 @@ namespace LiveFrame
                 ToggleBlindfoldMode();
             };
 
+            blindfoldModeHotKey = new HotKey(MOD_KEY.ALT | MOD_KEY.CONTROL | MOD_KEY.SHIFT, Keys.F);
+            disposer.Add(blindfoldModeHotKey);
+            blindfoldModeHotKey.HotKeyPush += (sender, e) =>
+            {
+                FitToActiveWindow();
+            };
+
             DoubleBuffered = true;
 
             timer = new Timer
@@ -150,21 +157,7 @@ namespace LiveFrame
 
                 if (followMode == FollowMode.ActiveWindow)
                 {
-                    Win32.Rect rect = new();
-                    _ = Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
-
-                    // 自分のウィンドウサイズのギャップを計算してサイズを補正する
-                    Win32.Rect rect1 = new();
-                    Win32.GetWindowRect(Handle, out rect1);
-                    Win32.Rect rect2 = new();
-                    _ = Win32.DwmGetWindowAttribute(Handle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect2, Marshal.SizeOf(typeof(Win32.Rect)));
-
-                    rect.Left += rect1.Left - rect2.Left;
-                    rect.Top += rect1.Top - rect2.Top;
-                    rect.Right += rect1.Right - rect2.Right;
-                    rect.Bottom += rect1.Bottom - rect2.Bottom;
-
-                    SetBounds(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
+                    FitToWindow(foregroundWindowHandle);
                 }
                 else
                 {
@@ -189,6 +182,35 @@ namespace LiveFrame
             SetFollowMode(followMode);
 
             SwitchEditMode();
+        }
+
+        private void FitToActiveWindow()
+        {
+            var foregroundWindowHandle = Win32.GetForegroundWindow();
+            if (!followSubWindow)
+            {
+                foregroundWindowHandle = Win32.GetAncestor(foregroundWindowHandle, Win32.GetAncestorFlags.GA_ROOTOWNER);
+            }
+            FitToWindow(foregroundWindowHandle);
+        }
+
+        private void FitToWindow(IntPtr foregroundWindowHandle)
+        {
+            Win32.Rect rect = new();
+            _ = Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
+
+            // 自分のウィンドウサイズのギャップを計算してサイズを補正する
+            Win32.Rect rect1 = new();
+            Win32.GetWindowRect(Handle, out rect1);
+            Win32.Rect rect2 = new();
+            _ = Win32.DwmGetWindowAttribute(Handle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect2, Marshal.SizeOf(typeof(Win32.Rect)));
+
+            rect.Left += rect1.Left - rect2.Left;
+            rect.Top += rect1.Top - rect2.Top;
+            rect.Right += rect1.Right - rect2.Right;
+            rect.Bottom += rect1.Bottom - rect2.Bottom;
+
+            SetBounds(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
         }
 
         private NotifyIcon InitializeTrayIcon()
