@@ -16,7 +16,7 @@ jobs:
 
       - name: Zip
         run: |
-          powershell Compress-Archive bin\Release\net5.0-windows\win-x64\publish\* LiveFrame.zip
+          powershell Compress-Archive bin\Release\net6.0-windows\win-x64\publish\* LiveFrame.zip
 
       - name: Release
         uses: softprops/action-gh-release@v1
