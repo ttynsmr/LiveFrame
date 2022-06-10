@@ -63,7 +63,10 @@ namespace LiveFrame
         private readonly HotKey followMouseModeHotKey;
         private readonly Timer timer;
         private bool enableFindMe = true;
-        private bool followSubWindow = true;
+        private static bool FollowSubWindow {
+            get { return Properties.Settings.Default.FollowSubWindow; }
+            set { Properties.Settings.Default.FollowSubWindow = value; }
+        }
         private Bitmap captured;
         private Dictionary<CaptureMode, CaptureModeSettings> subMenuCaptureModeSettings;
         private Dictionary<FollowMode, ToolStripMenuItem> subMenuMouseFollowModeItems = new();
@@ -185,7 +188,7 @@ namespace LiveFrame
             timer.Tick += (sender, e) =>
             {
                 var foregroundWindowHandle = Win32.GetForegroundWindow();
-                if (!followSubWindow)
+                if (!FollowSubWindow)
                 {
                     foregroundWindowHandle = Win32.GetAncestor(foregroundWindowHandle, Win32.GetAncestorFlags.GA_ROOTOWNER);
                 }
@@ -223,7 +226,7 @@ namespace LiveFrame
         private void FitToActiveWindow()
         {
             var foregroundWindowHandle = Win32.GetForegroundWindow();
-            if (!followSubWindow)
+            if (!FollowSubWindow)
             {
                 foregroundWindowHandle = Win32.GetAncestor(foregroundWindowHandle, Win32.GetAncestorFlags.GA_ROOTOWNER);
             }
@@ -311,10 +314,10 @@ namespace LiveFrame
             var followSubWindowMenu = new ToolStripMenuItem("&Follow Sub-Window", null, (sender, e) =>
             {
                 var item = sender as ToolStripMenuItem;
-                followSubWindow = !followSubWindow;
-                item.Checked = followSubWindow;
+                FollowSubWindow = !FollowSubWindow;
+                item.Checked = FollowSubWindow;
             });
-            followSubWindowMenu.Checked = followSubWindow;
+            followSubWindowMenu.Checked = FollowSubWindow;
             notifyIcon.ContextMenuStrip.Items.Add(followSubWindowMenu);
 
             var quitMenu = new ToolStripMenuItem("&Quit");

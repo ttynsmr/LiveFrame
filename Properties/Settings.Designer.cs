@@ -46,5 +46,17 @@ namespace LiveFrame.Properties {
                 this["CaptureMode"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool FollowSubWindow {
+            get {
+                return ((bool)(this["FollowSubWindow"]));
+            }
+            set {
+                this["FollowSubWindow"] = value;
+            }
+        }
     }
 }
