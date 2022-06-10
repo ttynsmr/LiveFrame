@@ -75,6 +75,8 @@ namespace LiveFrame
         {
             InitializeComponent();
 
+            InitializeDefaults();
+
             Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
 
             notifyIcon = InitializeTrayIcon();
@@ -221,6 +223,19 @@ namespace LiveFrame
             SetFollowMode(followMode);
 
             SwitchEditMode();
+        }
+
+        private void InitializeDefaults()
+        {
+            if (!Enum.TryParse(typeof(FollowMode), Properties.Settings.Default.FollowMode, false, out object followMode))
+            {
+                Properties.Settings.Default.CaptureMode = FollowMode.None.ToString();
+            }
+
+            if (!Enum.TryParse(typeof(CaptureMode), Properties.Settings.Default.CaptureMode, false, out object captureMode))
+            {
+                Properties.Settings.Default.CaptureMode = CaptureMode.SafeMode2.ToString();
+            }
         }
 
         private void FitToActiveWindow()
