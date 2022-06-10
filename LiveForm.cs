@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace LiveFrame
@@ -26,6 +27,31 @@ namespace LiveFrame
             MouseFrameBound
         }
 
+        enum CaptureMode
+        {
+            SafeMode2,
+            SafeMode5,
+            SafeMode10,
+            SafeMode15,
+            SafeMode30,
+            SafeMode60,
+            FastMode
+        }
+
+        struct CaptureModeSettings
+        {
+            public CaptureModeSettings(CaptureMode captureMode, int frameRate, ToolStripMenuItem menuItem)
+            {
+                this.CaptureMode = captureMode;
+                this.FrameRate = frameRate;
+                this.MenuItem = menuItem;
+            }
+            
+            public CaptureMode CaptureMode { get; private set; }
+            public int FrameRate { get; private set; }
+            public ToolStripMenuItem MenuItem { get; private set; }
+        }
+
         private VisibleMode visibleMode = VisibleMode.Edit;
         private FollowMode followMode = FollowMode.None;
         private MouseHook mouseHook;
@@ -37,9 +63,12 @@ namespace LiveFrame
         private readonly HotKey followMouseModeHotKey;
         private readonly Timer timer;
         private bool enableFindMe = true;
-        private bool followSubWindow = true;
+        private static bool FollowSubWindow {
+            get { return Properties.Settings.Default.FollowSubWindow; }
+            set { Properties.Settings.Default.FollowSubWindow = value; }
+        }
         private Bitmap captured;
-        private ToolStripMenuItem[] subMenuCaptureModeItems;
+        private Dictionary<CaptureMode, CaptureModeSettings> subMenuCaptureModeSettings;
         private Dictionary<FollowMode, ToolStripMenuItem> subMenuMouseFollowModeItems = new();
 
         public LiveForm()
@@ -49,6 +78,15 @@ namespace LiveFrame
             Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
 
             notifyIcon = InitializeTrayIcon();
+
+            if (Enum.IsDefined(typeof(FollowMode), Properties.Settings.Default.FollowMode))
+            {
+                SetFollowMode((FollowMode)Enum.Parse(typeof(FollowMode), Properties.Settings.Default.FollowMode));
+                if (followMode == FollowMode.MouseCenter || followMode == FollowMode.MouseFrameBound)
+                {
+                    ApplyMouseFollowMode();
+                }
+            }
 
             Click += (sender, e) =>
             {
@@ -150,7 +188,7 @@ namespace LiveFrame
             timer.Tick += (sender, e) =>
             {
                 var foregroundWindowHandle = Win32.GetForegroundWindow();
-                if (!followSubWindow)
+                if (!FollowSubWindow)
                 {
                     foregroundWindowHandle = Win32.GetAncestor(foregroundWindowHandle, Win32.GetAncestorFlags.GA_ROOTOWNER);
                 }
@@ -178,7 +216,8 @@ namespace LiveFrame
             };
             timer.Enabled = true;
 
-            SetCaptureMode(subMenuCaptureModeItems[0], false, 2);
+            var captureModeSetting = subMenuCaptureModeSettings[(CaptureMode)Enum.Parse(typeof(CaptureMode), Properties.Settings.Default.CaptureMode)];
+            SetCaptureMode(captureModeSetting);
             SetFollowMode(followMode);
 
             SwitchEditMode();
@@ -187,7 +226,7 @@ namespace LiveFrame
         private void FitToActiveWindow()
         {
             var foregroundWindowHandle = Win32.GetForegroundWindow();
-            if (!followSubWindow)
+            if (!FollowSubWindow)
             {
                 foregroundWindowHandle = Win32.GetAncestor(foregroundWindowHandle, Win32.GetAncestorFlags.GA_ROOTOWNER);
             }
@@ -196,14 +235,11 @@ namespace LiveFrame
 
         private void FitToWindow(IntPtr foregroundWindowHandle)
         {
-            Win32.Rect rect = new();
-            _ = Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect, Marshal.SizeOf(typeof(Win32.Rect)));
+            _ = Win32.DwmGetWindowAttribute(foregroundWindowHandle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out Win32.Rect rect, Marshal.SizeOf(typeof(Win32.Rect)));
 
             // 自分のウィンドウサイズのギャップを計算してサイズを補正する
-            Win32.Rect rect1 = new();
-            Win32.GetWindowRect(Handle, out rect1);
-            Win32.Rect rect2 = new();
-            _ = Win32.DwmGetWindowAttribute(Handle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out rect2, Marshal.SizeOf(typeof(Win32.Rect)));
+            Win32.GetWindowRect(Handle, out Win32.Rect rect1);
+            _ = Win32.DwmGetWindowAttribute(Handle, Win32.DWMWA_EXTENDED_FRAME_BOUNDS, out Win32.Rect rect2, Marshal.SizeOf(typeof(Win32.Rect)));
 
             rect.Left += rect1.Left - rect2.Left;
             rect.Top += rect1.Top - rect2.Top;
@@ -230,30 +266,28 @@ namespace LiveFrame
                 }
             };
 
-            subMenuCaptureModeItems = new ToolStripMenuItem[] {
-                new ToolStripMenuItem("Safe Mode(2FPS)", null, (sender, e) => {
-                    SetCaptureMode(sender as ToolStripMenuItem, false, 2);
-                }),
-                new ToolStripMenuItem("Safe Mode(5FPS)", null, (sender, e) => {
-                    SetCaptureMode(sender as ToolStripMenuItem, false, 5);
-                }),
-                new ToolStripMenuItem("Safe Mode(10FPS)", null, (sender, e) => {
-                    SetCaptureMode(sender as ToolStripMenuItem, false, 10);
-                }),
-                new ToolStripMenuItem("Safe Mode(15FPS)", null, (sender, e) => {
-                    SetCaptureMode(sender as ToolStripMenuItem, false, 15);
-                }),
-                new ToolStripMenuItem("Safe Mode(30FPS)", null, (sender, e) => {
-                    SetCaptureMode(sender as ToolStripMenuItem, false, 30);
-                }),
-                new ToolStripMenuItem("Safe Mode(60FPS)", null, (sender, e) => {
-                    SetCaptureMode(sender as ToolStripMenuItem, false, 60);
-                }),
-                new ToolStripMenuItem("Fast Mode", null, (sender, e) => {
-                    SetCaptureMode(sender as ToolStripMenuItem, true, 2);
-                })
+            var createCaptureModeSettingPair = (CaptureMode captureMode, int frameRate, string menuItemText) =>
+            {
+                return new Tuple<CaptureMode, CaptureModeSettings>(
+                    captureMode,
+                    new CaptureModeSettings(captureMode, frameRate, new ToolStripMenuItem(string.Format(menuItemText, frameRate), null, (sender, e) =>
+                    {
+                        SetCaptureMode(subMenuCaptureModeSettings[captureMode]);
+                    }))
+                );
             };
-            var captureModeSubMenu = new ToolStripMenuItem("&Capture Mode", null, subMenuCaptureModeItems);
+
+            subMenuCaptureModeSettings = (new[] {
+                createCaptureModeSettingPair(CaptureMode.SafeMode2, 2, "Safe Mode({0}FPS)"),
+                createCaptureModeSettingPair(CaptureMode.SafeMode5, 5, "Safe Mode({0}FPS)"),
+                createCaptureModeSettingPair(CaptureMode.SafeMode10, 10, "Safe Mode({0}FPS)"),
+                createCaptureModeSettingPair(CaptureMode.SafeMode15, 15, "Safe Mode({0}FPS)"),
+                createCaptureModeSettingPair(CaptureMode.SafeMode30, 30, "Safe Mode({0}FPS)"),
+                createCaptureModeSettingPair(CaptureMode.SafeMode60, 60, "Safe Mode({0}FPS)"),
+                createCaptureModeSettingPair(CaptureMode.FastMode, 2, "Fast Mode"),
+            }).ToDictionary(x => x.Item1, x => x.Item2);
+
+            var captureModeSubMenu = new ToolStripMenuItem("&Capture Mode", null, subMenuCaptureModeSettings.Values.Select((s) => s.MenuItem).ToArray());
             notifyIcon.ContextMenuStrip.Items.Add(captureModeSubMenu);
 
             subMenuMouseFollowModeItems = new Dictionary<FollowMode, ToolStripMenuItem> {
@@ -280,10 +314,10 @@ namespace LiveFrame
             var followSubWindowMenu = new ToolStripMenuItem("&Follow Sub-Window", null, (sender, e) =>
             {
                 var item = sender as ToolStripMenuItem;
-                followSubWindow = !followSubWindow;
-                item.Checked = followSubWindow;
+                FollowSubWindow = !FollowSubWindow;
+                item.Checked = FollowSubWindow;
             });
-            followSubWindowMenu.Checked = followSubWindow;
+            followSubWindowMenu.Checked = FollowSubWindow;
             notifyIcon.ContextMenuStrip.Items.Add(followSubWindowMenu);
 
             var quitMenu = new ToolStripMenuItem("&Quit");
@@ -302,6 +336,7 @@ namespace LiveFrame
 
         private void SetFollowMode(FollowMode mode)
         {
+            Properties.Settings.Default.FollowMode = mode.ToString();
             followMode = mode;
             foreach (var item in subMenuMouseFollowModeItems)
             {
@@ -309,18 +344,19 @@ namespace LiveFrame
             }
         }
 
-        private void SetCaptureMode(ToolStripMenuItem selected, bool isFast, int fps)
+        private void SetCaptureMode(CaptureModeSettings captureModeSettings)
         {
-            SetFindMeMode(!isFast);
-            timer.Interval = 1000 / fps;
-            SelectCaptureMode(selected);
+            Properties.Settings.Default.CaptureMode = captureModeSettings.CaptureMode.ToString();
+            SetFindMeMode(captureModeSettings.CaptureMode != CaptureMode.FastMode);
+            timer.Interval = 1000 / captureModeSettings.FrameRate;
+            SelectCaptureMode(captureModeSettings.MenuItem);
         }
 
         private void SelectCaptureMode(ToolStripMenuItem selected)
         {
-            foreach (var item in subMenuCaptureModeItems)
+            foreach (var item in subMenuCaptureModeSettings)
             {
-                item.Checked = item == selected;
+                item.Value.MenuItem.Checked = item.Value.MenuItem == selected;
             }
         }
 
@@ -328,6 +364,11 @@ namespace LiveFrame
         {
             ToggleMouseFollowMode();
 
+            ApplyMouseFollowMode();
+        }
+
+        private void ApplyMouseFollowMode()
+        {
             if (followMode == FollowMode.MouseCenter || followMode == FollowMode.MouseFrameBound)
             {
                 if (mouseHook == null)

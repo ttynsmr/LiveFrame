@@ -15,6 +15,9 @@ namespace LiveFrame
         [STAThread]
         static void Main()
         {
+            Application.ApplicationExit += (object _, EventArgs _) => {
+                Properties.Settings.Default.Save();
+            };
             Application.EnableVisualStyles();
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.SetCompatibleTextRenderingDefault(false);
