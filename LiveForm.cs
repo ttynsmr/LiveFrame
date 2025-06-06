@@ -335,6 +335,10 @@ namespace LiveFrame
             followSubWindowMenu.Checked = FollowSubWindow;
             notifyIcon.ContextMenuStrip.Items.Add(followSubWindowMenu);
 
+            var aboutMenu = new ToolStripMenuItem($"About LiveFrame Version {Application.ProductVersion.Split('+')[0]}");
+            aboutMenu.Enabled = false;
+            notifyIcon.ContextMenuStrip.Items.Add(aboutMenu);
+
             var quitMenu = new ToolStripMenuItem("&Quit");
             quitMenu.Click += (object sender, EventArgs e) =>
             {

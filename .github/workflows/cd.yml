@@ -9,14 +9,24 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: microsoft/setup-msbuild@v2.0.0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
       - name: Build
-        run: .\BuildReleaseApplication.bat
+        run: |
+          dotnet restore
+          dotnet publish --runtime win-x64 --configuration Release --self-contained false -p:ApplicationVersion=${{ env.VERSION }} -p:Version=${{ env.VERSION }}
 
       - name: Zip
         run: |
-          powershell Compress-Archive bin\Release\net6.0-windows\win-x64\publish\* LiveFrame.zip
+          powershell Compress-Archive -Path bin\Release\net8.0-windows\win-x64\publish\* -DestinationPath LiveFrame.zip
 
       - name: Release
         uses: softprops/action-gh-release@v2
